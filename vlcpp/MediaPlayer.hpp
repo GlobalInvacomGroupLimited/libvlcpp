@@ -44,7 +44,7 @@ class TrackDescription;
 ///
 /// \brief The MediaPlayer class exposes libvlc_media_player_t functionnalities
 ///
-class MediaPlayer : private CallbackOwner<13>, public Internal<libvlc_media_player_t>
+class MediaPlayer : private CallbackOwner<14>, public Internal<libvlc_media_player_t>
 {
 private:
     enum class CallbackIdx : unsigned int
@@ -63,6 +63,8 @@ private:
         VideoDisplay,
         VideoFormat,
         VideoCleanup,
+
+        FecStats,
     };
 public:
     /**
@@ -1099,6 +1101,18 @@ public:
         libvlc_video_set_format_callbacks(*this,
                 CallbackWrapper<(unsigned int)CallbackIdx::VideoFormat, libvlc_video_format_cb>::wrap( *m_callbacks, std::forward<FormatCb>( setup ) ),
                 CallbackWrapper<(unsigned int)CallbackIdx::VideoCleanup, libvlc_video_cleanup_cb>::wrap( *m_callbacks, std::forward<CleanupCb>( cleanup ) ) );
+    }
+
+    template <typename FecStatsCb>
+    void setFecStatsCallbacks(FecStatsCb&& fecStats)
+    {
+        static_assert(signature_match_or_nullptr<FecStatsCb, void(void*)>::value, "Unmatched prototype for fecStats callback");
+
+        libvlc_fec_set_status_callbacks(*this,
+                CallbackWrapper<(unsigned int)CallbackIdx::FecStats, libvlc_fec_stats_cb>::wrap( *m_callbacks, std::forward<FecStatsCb>( fecStats ) ),
+                // We will receive the pointer as a void*, we need to offset the value *now*, otherwise we'd get
+                // a shifted value, resulting in an empty callback array.
+                m_callbacks.get() );
     }
 
     /**
