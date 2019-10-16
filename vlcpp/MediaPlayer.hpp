@@ -1011,6 +1011,16 @@ public:
     }
 
     /**
+     * Unset current audio track.
+     *
+     * \param i_track  the track ID (i_id field from track description)
+     */
+    bool unsetAudioTrack(int i_track)
+    {
+        return libvlc_audio_unset_track(*this, i_track) == 0;
+    }
+
+    /**
      * Get current audio channel.
      *
      * \return the audio channel
