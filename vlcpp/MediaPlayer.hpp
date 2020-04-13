@@ -44,7 +44,7 @@ class TrackDescription;
 ///
 /// \brief The MediaPlayer class exposes libvlc_media_player_t functionnalities
 ///
-class MediaPlayer : private CallbackOwner<14>, public Internal<libvlc_media_player_t>
+class MediaPlayer : private CallbackOwner<23>, public Internal<libvlc_media_player_t>
 {
 private:
     enum class CallbackIdx : unsigned int
@@ -65,6 +65,16 @@ private:
         VideoCleanup,
 
         FecStats,
+
+        VideoOutSetup,
+        VideoOutCleanup,
+        VideoOutResize,
+        VideoOutUpdate,
+        VideoOutSwap,
+        VideoOutMakeCurrent,
+        VideoOutGetProcAddress,
+        VideoOutFrameMetadata,
+        VideoOutSelectPlane,
     };
 public:
 #if LIBVLC_VERSION_INT >= LIBVLC_VERSION(4, 0, 0, 0)
@@ -1155,6 +1165,29 @@ public:
                 CallbackWrapper<(unsigned int)CallbackIdx::VideoFormat, libvlc_video_format_cb>::wrap( *m_callbacks, std::forward<FormatCb>( setup ) ),
                 CallbackWrapper<(unsigned int)CallbackIdx::VideoCleanup, libvlc_video_cleanup_cb>::wrap( *m_callbacks, std::forward<CleanupCb>( cleanup ) ) );
     }
+
+
+    template <typename VideoOutSetup, typename VideoOutCleanup, typename VideoOutResize, typename VideoOutUpdate, typename VideoOutSwap, typename VideoOutMakeCurrent,
+              typename VideoOutGetProcAddress, typename VideoOutFrameMetadata, typename VideoOutSelectPlane>
+    void setVideoOutputCallbacks(libvlc_video_engine_t engine, VideoOutSetup&& outSetup, VideoOutCleanup&& outCleanup, VideoOutResize&& outResize, VideoOutUpdate&& outUpdate,
+                                 VideoOutSwap&& outSwap, VideoOutMakeCurrent&& outMakeCurrent, VideoOutGetProcAddress&& outGetProcAddress,
+                                 VideoOutFrameMetadata&& outFrameMetadata, VideoOutSelectPlane&& outSelectPlane)
+    {
+        libvlc_video_set_output_callbacks(*this, engine,
+                CallbackWrapper<(unsigned int)CallbackIdx::VideoOutSetup, libvlc_video_output_setup_cb>::wrap( *m_callbacks, std::forward<VideoOutSetup>( outSetup ) ),
+                CallbackWrapper<(unsigned int)CallbackIdx::VideoOutCleanup, libvlc_video_output_cleanup_cb>::wrap( *m_callbacks, std::forward<VideoOutCleanup>( outCleanup ) ),
+                CallbackWrapper<(unsigned int)CallbackIdx::VideoOutResize, libvlc_video_output_set_resize_cb>::wrap( *m_callbacks, std::forward<VideoOutResize>( outResize ) ),
+                CallbackWrapper<(unsigned int)CallbackIdx::VideoOutUpdate, libvlc_video_update_output_cb>::wrap( *m_callbacks, std::forward<VideoOutUpdate>( outUpdate ) ),
+                CallbackWrapper<(unsigned int)CallbackIdx::VideoOutSwap, libvlc_video_swap_cb>::wrap( *m_callbacks, std::forward<VideoOutSwap>( outSwap ) ),
+                CallbackWrapper<(unsigned int)CallbackIdx::VideoOutMakeCurrent, libvlc_video_makeCurrent_cb>::wrap( *m_callbacks, std::forward<VideoOutMakeCurrent>( outMakeCurrent ) ),
+                CallbackWrapper<(unsigned int)CallbackIdx::VideoOutGetProcAddress, libvlc_video_getProcAddress_cb>::wrap( *m_callbacks, std::forward<VideoOutGetProcAddress>( outGetProcAddress ) ),
+                CallbackWrapper<(unsigned int)CallbackIdx::VideoOutFrameMetadata, libvlc_video_frameMetadata_cb>::wrap( *m_callbacks, std::forward<VideoOutFrameMetadata>( outFrameMetadata ) ),
+                CallbackWrapper<(unsigned int)CallbackIdx::VideoOutSelectPlane, libvlc_video_output_select_plane_cb>::wrap( *m_callbacks, std::forward<VideoOutSelectPlane>( outSelectPlane ) ),
+                // We will receive the pointer as a void*, we need to offset the value *now*, otherwise we'd get
+                // a shifted value, resulting in an empty callback array.
+                m_callbacks.get() );
+    }
+
 
     template <typename FecStatsCb>
     void setFecStatsCallbacks(FecStatsCb&& fecStats)
